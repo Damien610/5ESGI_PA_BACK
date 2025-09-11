@@ -2,9 +2,10 @@ name: Python CI
 
 on:
   push:
-    branches: [ '*' ]
+    branches:
+      - '**'
   pull_request:
-    branches: [ main ]
+    branches: [ main, develop ]
 
 jobs:
   test:
@@ -57,7 +58,7 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build & Push Docker Test image
-        if: success() && github.event_name == 'push' && github.ref != 'refs/heads/main'
+        if: success() && github.base_ref == 'develop' && github.ref != 'refs/heads/main'
         run: |
           DOCKER_USERNAME=damiennerri
           DATE_TAG=$(date +'%Y%m%d-%H%M')
