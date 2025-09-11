@@ -13,6 +13,6 @@ Base = declarative_base()
 def init_db():
     try:
         engine.connect()
-        print("✅ Database connection successful")
+        print("✅ Database connectio successful")
     except Exception as e:
         print("❌ Database connection failed:", e)
