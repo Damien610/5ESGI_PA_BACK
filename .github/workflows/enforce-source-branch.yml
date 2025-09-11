@@ -1,0 +1,18 @@
+name: Enforce PR source branch to main
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+jobs:
+  enforce:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Block PRs to main unless from develop
+        run: |
+          echo "Base: ${{ github.base_ref }} | Head: ${{ github.head_ref }}"
+          if [ "${{ github.base_ref }}" = "main" ] && [ "${{ github.head_ref }}" != "develop" ]; then
+            echo "❌ Seules les PRs depuis 'develop' peuvent être mergées vers 'main'."
+            exit 1
+          fi
+          echo "✅ Règle OK."
