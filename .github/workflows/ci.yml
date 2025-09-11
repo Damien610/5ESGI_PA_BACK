@@ -2,7 +2,7 @@ name: Python CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ '*' ]
   pull_request:
     branches: [ main ]
 
@@ -56,14 +56,22 @@ jobs:
         if: success()
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      - name: Build & Push Docker image
-        if: success()
+      - name: Build & Push Docker Test image
+        if: success() && github.event_name == 'push' && github.ref != 'refs/heads/main'
+        run: |
+          DOCKER_USERNAME=damiennerri
+          DATE_TAG=$(date +'%Y%m%d-%H%M')
+          IMAGE_NAME="pa-2025-2026-test"
+          docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG -t $DOCKER_USERNAME/$IMAGE_NAME:latest -f Dockerfile .
+          docker push $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG
+          docker push $DOCKER_USERNAME/$IMAGE_NAME:latest
+
+      - name: Build & Push Docker Production image
+        if: success() && github.ref == 'refs/heads/main'
         run: |
           DOCKER_USERNAME=damiennerri
           DATE_TAG=$(date +'%Y%m%d-%H%M')
           IMAGE_NAME="pa-2025-2026"
-          docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG -t $DOCKER_USERNAME/$IMAGE_NAME:latest .
-          echo "Pushing $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG and latest"
+          docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG -t $DOCKER_USERNAME/$IMAGE_NAME:latest -f Dockerfile.prod .
           docker push $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG
           docker push $DOCKER_USERNAME/$IMAGE_NAME:latest
-
