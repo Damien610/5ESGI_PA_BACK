@@ -48,7 +48,14 @@ jobs:
           pip install alembic
 
       - name: Run Alembic migrations
-        run: alembic -c path/to/alembic.ini upgrade head
+        run: alembic -c alembic.ini upgrade head
+        env:
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_HOST: ${{ env.POSTGRES_HOST }}
+          POSTGRES_PORT: ${{ env.POSTGRES_PORT }}
+          PYTHONPATH: ${{ github.workspace }}
 
       - name: Run tests with pytest
         run: pytest tests
