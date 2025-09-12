@@ -8,3 +8,4 @@ sqlalchemy
 pytest
 httpx
 pytest-asyncio
+dotenv

@@ -12,7 +12,7 @@ dev-bash-api:
 	docker exec -it fastapi_projet_dev bash
 
 dev-bash-db:
-	docker exec -it postgres_dev bash
+	docker exec -it postgres_dev bashM
 
 # 🚀 Environnement de production
 prod-up:
