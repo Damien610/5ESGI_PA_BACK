@@ -2,7 +2,8 @@ name: Python CI
 
 on:
   push:
-    branches: ['**']
+    branches:
+      - '**'
   pull_request:
     branches: [ main, develop ]
 
@@ -10,56 +11,35 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    # Choix d'environnement (push + PR)
-    environment: ${{ (
-      (github.event_name == 'pull_request' && github.base_ref == 'main')    || github.ref == 'refs/heads/main'
-      ) && 'production' || (
-      (github.event_name == 'pull_request' && github.base_ref == 'develop') || github.ref == 'refs/heads/develop'
-      ) && 'staging' || '' }}
-
-    # ✅ Résoudre ICI les valeurs (secrets/vars) avec fallbacks sûrs
-    env:
-      POSTGRES_USER:     ${{ (secrets.POSTGRES_USER     != '' && secrets.POSTGRES_USER)     || (vars.POSTGRES_USER     != '' && vars.POSTGRES_USER)     || 'postgres' }}
-      POSTGRES_PASSWORD: ${{ (secrets.POSTGRES_PASSWORD != '' && secrets.POSTGRES_PASSWORD) || (vars.POSTGRES_PASSWORD != '' && vars.POSTGRES_PASSWORD) || 'postgres' }}
-      POSTGRES_DB:       ${{ (secrets.POSTGRES_DB       != '' && secrets.POSTGRES_DB)       || (vars.POSTGRES_DB       != '' && vars.POSTGRES_DB)       || 'test_db' }}
-      POSTGRES_HOST:     ${{ (secrets.POSTGRES_HOST     != '' && secrets.POSTGRES_HOST)     || (vars.POSTGRES_HOST     != '' && vars.POSTGRES_HOST)     || 'postgres' }}
-      POSTGRES_PORT:     ${{ (secrets.POSTGRES_PORT     != '' && secrets.POSTGRES_PORT)     || (vars.POSTGRES_PORT     != '' && vars.POSTGRES_PORT)     || '5432' }}
-
     services:
       postgres:
         image: postgres:15
-        # ❗️Utiliser ce qui est déjà résolu dans env.*
+        ports: ['5432:5432']
         env:
-          POSTGRES_USER:     ${{ env.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
-          POSTGRES_DB:       ${{ env.POSTGRES_DB }}
-        # Pas besoin d'exposer de ports en CI
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
         options: >-
-          --health-cmd="pg_isready -U ${{ env.POSTGRES_USER }}"
+          --health-cmd="pg_isready -U postgres"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
 
-    steps:
-      - uses: actions/checkout@v4
+    env:
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER || 'postgres' }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'postgres' }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB || 'test_db' }}
+      POSTGRES_HOST: ${{ secrets.POSTGRES_HOST || 'localhost' }}
+      POSTGRES_PORT: ${{ secrets.POSTGRES_PORT || '5432' }}
 
-      - uses: actions/setup-python@v5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: pip
-
-      - name: Debug env (temporaire)
-        run: |
-          echo "event=${{ github.event_name }}"
-          echo "ref=${{ github.ref }}"
-          echo "base_ref=${{ github.base_ref }}"
-          echo "ENV=${{ (
-            (github.event_name == 'pull_request' && github.base_ref == 'main')    || github.ref == 'refs/heads/main'
-          ) && 'production' || (
-            (github.event_name == 'pull_request' && github.base_ref == 'develop') || github.ref == 'refs/heads/develop'
-          ) && 'staging' || 'none' }}"
-          echo "POSTGRES_HOST=${POSTGRES_HOST}"
-          echo "POSTGRES_PORT=${POSTGRES_PORT}"
 
       - name: Install dependencies
         run: |
@@ -70,11 +50,14 @@ jobs:
       - name: Run Alembic migrations
         run: alembic -c alembic.ini upgrade head
         env:
-          # ✅ URL complète = pas de surprises
-          DATABASE_URL: postgresql+psycopg2://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
+          POSTGRES_USER: ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ env.POSTGRES_DB }}
+          POSTGRES_HOST: ${{ env.POSTGRES_HOST }}
+          POSTGRES_PORT: ${{ env.POSTGRES_PORT }}
           PYTHONPATH: ${{ github.workspace }}
 
-      - name: Run tests
+      - name: Run tests with pytest
         run: pytest tests
 
       - name: Log in to Docker Hub
@@ -82,7 +65,7 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build & Push Docker Test image
-        if: success() && github.event_name == 'pull_request' && github.base_ref == 'develop'
+        if: success() && (github.ref == 'refs/heads/develop' || github.base_ref == 'develop') && github.ref != 'refs/heads/main'
         run: |
           DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
           DATE_TAG=$(date +'%Y%m%d-%H%M')
