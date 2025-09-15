@@ -2,8 +2,7 @@ name: Python CI
 
 on:
   push:
-    branches:
-      - '**'
+    branches: ['**']
   pull_request:
     branches: [ main, develop ]
 
@@ -11,30 +10,35 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # Choix d'environnement (push + PR)
     environment: ${{ (
       (github.event_name == 'pull_request' && github.base_ref == 'main')    || github.ref == 'refs/heads/main'
       ) && 'production' || (
       (github.event_name == 'pull_request' && github.base_ref == 'develop') || github.ref == 'refs/heads/develop'
       ) && 'staging' || '' }}
 
+    # ✅ Résoudre ICI les valeurs (secrets/vars) avec fallbacks sûrs
+    env:
+      POSTGRES_USER:     ${{ (secrets.POSTGRES_USER     != '' && secrets.POSTGRES_USER)     || (vars.POSTGRES_USER     != '' && vars.POSTGRES_USER)     || 'postgres' }}
+      POSTGRES_PASSWORD: ${{ (secrets.POSTGRES_PASSWORD != '' && secrets.POSTGRES_PASSWORD) || (vars.POSTGRES_PASSWORD != '' && vars.POSTGRES_PASSWORD) || 'postgres' }}
+      POSTGRES_DB:       ${{ (secrets.POSTGRES_DB       != '' && secrets.POSTGRES_DB)       || (vars.POSTGRES_DB       != '' && vars.POSTGRES_DB)       || 'test_db' }}
+      POSTGRES_HOST:     ${{ (secrets.POSTGRES_HOST     != '' && secrets.POSTGRES_HOST)     || (vars.POSTGRES_HOST     != '' && vars.POSTGRES_HOST)     || 'postgres' }}
+      POSTGRES_PORT:     ${{ (secrets.POSTGRES_PORT     != '' && secrets.POSTGRES_PORT)     || (vars.POSTGRES_PORT     != '' && vars.POSTGRES_PORT)     || '5432' }}
+
     services:
       postgres:
         image: postgres:15
+        # ❗️Utiliser ce qui est déjà résolu dans env.*
         env:
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER     || vars.POSTGRES_USER     || 'postgres' }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || vars.POSTGRES_PASSWORD || 'postgres' }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB       || vars.POSTGRES_DB       || 'test_db' }}
+          POSTGRES_USER:     ${{ env.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ env.POSTGRES_PASSWORD }}
+          POSTGRES_DB:       ${{ env.POSTGRES_DB }}
+        # Pas besoin d'exposer de ports en CI
         options: >-
-          --health-cmd="pg_isready -U ${{ secrets.POSTGRES_USER || vars.POSTGRES_USER || 'postgres' }}"
-          --health-interval=10s --health-timeout=5s --health-retries=5
-
-    env:
-      POSTGRES_USER: ${{ secrets.POSTGRES_USER     || vars.POSTGRES_USER     || 'postgres' }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || vars.POSTGRES_PASSWORD || 'postgres' }}
-      POSTGRES_DB: ${{ secrets.POSTGRES_DB       || vars.POSTGRES_DB       || 'test_db' }}
-      POSTGRES_HOST: 'postgres'   # reste 'postgres' car on parle au service
-      POSTGRES_PORT: '5432'
-
+          --health-cmd="pg_isready -U ${{ env.POSTGRES_USER }}"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - uses: actions/checkout@v4
@@ -49,7 +53,7 @@ jobs:
           echo "event=${{ github.event_name }}"
           echo "ref=${{ github.ref }}"
           echo "base_ref=${{ github.base_ref }}"
-          echo "ENV RESOLVED -> ${{ (
+          echo "ENV=${{ (
             (github.event_name == 'pull_request' && github.base_ref == 'main')    || github.ref == 'refs/heads/main'
           ) && 'production' || (
             (github.event_name == 'pull_request' && github.base_ref == 'develop') || github.ref == 'refs/heads/develop'
@@ -66,6 +70,7 @@ jobs:
       - name: Run Alembic migrations
         run: alembic -c alembic.ini upgrade head
         env:
+          # ✅ URL complète = pas de surprises
           DATABASE_URL: postgresql+psycopg2://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
           PYTHONPATH: ${{ github.workspace }}
 
