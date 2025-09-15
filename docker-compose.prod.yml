@@ -21,7 +21,6 @@ services:
       - db_prod
     env_file:
       - .env.prod
-    # harmoniser les ports : écoute 8000 dans le conteneur, expose 8001 dehors
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8001:8000"

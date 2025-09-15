@@ -11,6 +11,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || (github.ref == 'refs/heads/develop' && 'staging' || '') }}
+
     services:
       postgres:
         image: postgres:15
