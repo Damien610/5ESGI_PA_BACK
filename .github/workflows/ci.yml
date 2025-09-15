@@ -11,7 +11,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || (github.ref == 'refs/heads/develop' && 'staging' || '') }}
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
 
     services:
       postgres:
@@ -49,10 +49,15 @@ jobs:
           pip install -r requirements.txt
           pip install alembic
 
-      - name: Debug env vars
+      - name: Debug environnement
         run: |
-          echo "POSTGRES_PORT=${POSTGRES_PORT}"
-          echo "POSTGRES_HOST=${POSTGRES_HOST}"
+          if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
+            echo "production"
+          elif [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
+            echo "staging"
+          else
+            echo "aucun environnement spécifique"
+          fi
 
       - name: Run Alembic migrations
         run: alembic upgrade head
