@@ -1,30 +1,52 @@
-name: CD Staging (build & push)
+name: CI (tests)
 
 on:
   push:
-    branches: [ develop ]
+    branches: ['**']
 
 jobs:
-  publish-staging:
+  test:
     runs-on: ubuntu-latest
-    environment: staging
+
+    services:
+      postgres:
+        image: postgres:15
+        ports: ['5432:5432']
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_db
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
 
     steps:
       - uses: actions/checkout@v4
-
-      - uses: docker/setup-buildx-action@v3
-
-      - uses: docker/login-action@v3
+      - uses: actions/setup-python@v5
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          python-version: "3.12"
+          cache: pip
 
-      - name: Build & Push Docker Staging image
+      - name: Install dependencies
         run: |
-          DATE_TAG=$(date +'%Y%m%d-%H%M')
-          IMAGE_NAME="pa-2025-2026-test"
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:$DATE_TAG \
-                       -t ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest \
-                       -f Dockerfile .
-          docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:$DATE_TAG
-          docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install alembic
+
+      - name: Run Alembic migrations
+        run: alembic -c alembic.ini upgrade head
+        env:
+          DATABASE_URL: postgresql+psycopg2://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
+          PYTHONPATH: ${{ github.workspace }}
+
+      - name: Run tests
+        run: pytest tests
