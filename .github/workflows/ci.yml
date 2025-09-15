@@ -1,23 +1,17 @@
-name: Python CI
+name: CI (tests)
 
 on:
   push:
     branches: ['**']
-  pull_request:
-    branches: [ main, develop ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
 
-    environment: ${{ (
-        (github.event_name == 'pull_request' && github.base_ref == 'main') || github.ref == 'refs/heads/main'
-      ) && 'production' || 'staging' }}
-
     services:
       postgres:
         image: postgres:15
-        ports: ['5432:5432']              # 👈 publier le port pour l'hôte
+        ports: ['5432:5432']
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -32,12 +26,11 @@ jobs:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: test_db
-      POSTGRES_HOST: 127.0.0.1          # 👈 se connecter via l’hôte
+      POSTGRES_HOST: 127.0.0.1
       POSTGRES_PORT: '5432'
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -49,17 +42,6 @@ jobs:
           pip install -r requirements.txt
           pip install alembic
 
-      - name: Debug (temp)
-        run: |
-          echo "event=${{ github.event_name }}"
-          echo "ref=${{ github.ref }}"
-          echo "base_ref=${{ github.base_ref }}"
-          echo "ENV=${{ (
-            (github.event_name == 'pull_request' && github.base_ref == 'main') || github.ref == 'refs/heads/main'
-          ) && 'production' || 'staging' }}"
-          echo "POSTGRES_HOST=$POSTGRES_HOST"
-          echo "POSTGRES_PORT=$POSTGRES_PORT"
-
       - name: Run Alembic migrations
         run: alembic -c alembic.ini upgrade head
         env:
@@ -68,27 +50,3 @@ jobs:
 
       - name: Run tests
         run: pytest tests
-
-      - name: Log in to Docker Hub
-        if: success()
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Build & Push Docker Staging image
-        if: success() && github.ref != 'refs/heads/main' && !(github.event_name == 'pull_request' && github.base_ref == 'main')
-        run: |
-          DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
-          DATE_TAG=$(date +'%Y%m%d-%H%M')
-          IMAGE_NAME="pa-2025-2026-test"
-          docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG -t $DOCKER_USERNAME/$IMAGE_NAME:latest -f Dockerfile .
-          docker push $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG
-          docker push $DOCKER_USERNAME/$IMAGE_NAME:latest
-
-      - name: Build & Push Docker Production image
-        if: success() && (github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.base_ref == 'main'))
-        run: |
-          DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
-          DATE_TAG=$(date +'%Y%m%d-%H%M')
-          IMAGE_NAME="pa-2025-2026"
-          docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG -t $DOCKER_USERNAME/$IMAGE_NAME:latest -f Dockerfile.prod .
-          docker push $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG
-          docker push $DOCKER_USERNAME/$IMAGE_NAME:latest
