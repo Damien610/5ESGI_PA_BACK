@@ -11,6 +11,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    environment: ${{ (
+          (github.event_name == 'pull_request' && github.base_ref == 'main') || github.ref == 'refs/heads/main'
+        ) && 'production' || 'staging' }}
+
     services:
       postgres:
         image: postgres:15
@@ -96,5 +100,6 @@ jobs:
           docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG -t $DOCKER_USERNAME/$IMAGE_NAME:latest -f Dockerfile.prod .
           docker push $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG
           docker push $DOCKER_USERNAME/$IMAGE_NAME:latest
+
 
 
