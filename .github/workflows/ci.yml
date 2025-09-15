@@ -47,6 +47,19 @@ jobs:
           pip install -r requirements.txt
           pip install alembic
 
+      - name: Debug env (temporaire)
+        run: |
+          echo "event=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "base_ref=${{ github.base_ref }}"
+          echo "ENV=${{ (
+            (github.event_name == 'pull_request' && github.base_ref == 'main')    || github.ref == 'refs/heads/main'
+          ) && 'production' || (
+            (github.event_name == 'pull_request' && github.base_ref == 'develop') || github.ref == 'refs/heads/develop'
+          ) && 'staging' || 'none' }}"
+          echo "POSTGRES_HOST=${POSTGRES_HOST}"
+          echo "POSTGRES_PORT=${POSTGRES_PORT}"
+
       - name: Run Alembic migrations
         run: alembic -c alembic.ini upgrade head
         env:
@@ -83,3 +96,4 @@ jobs:
           docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG -t $DOCKER_USERNAME/$IMAGE_NAME:latest -f Dockerfile.prod .
           docker push $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG
           docker push $DOCKER_USERNAME/$IMAGE_NAME:latest
+
