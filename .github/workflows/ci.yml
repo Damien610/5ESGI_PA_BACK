@@ -10,7 +10,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    # main (push ou PR->main) => production ; sinon => staging
     environment: ${{ (
         (github.event_name == 'pull_request' && github.base_ref == 'main') || github.ref == 'refs/heads/main'
       ) && 'production' || 'staging' }}
@@ -18,6 +17,7 @@ jobs:
     services:
       postgres:
         image: postgres:15
+        ports: ['5432:5432']              # 👈 publier le port pour l'hôte
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -27,14 +27,12 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
-        # pas de ports nécessaires
 
-    # ⚠️ CI = DB éphémère du service ci-dessus → utilise ces valeurs fixes
     env:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: test_db
-      POSTGRES_HOST: postgres     # 👈 le hostname du service, PAS un secret
+      POSTGRES_HOST: 127.0.0.1          # 👈 se connecter via l’hôte
       POSTGRES_PORT: '5432'
 
     steps:
@@ -51,12 +49,12 @@ jobs:
           pip install -r requirements.txt
           pip install alembic
 
-      - name: Debug (temporaire)
+      - name: Debug (temp)
         run: |
           echo "event=${{ github.event_name }}"
           echo "ref=${{ github.ref }}"
           echo "base_ref=${{ github.base_ref }}"
-          echo "ENV sélectionné=${{ (
+          echo "ENV=${{ (
             (github.event_name == 'pull_request' && github.base_ref == 'main') || github.ref == 'refs/heads/main'
           ) && 'production' || 'staging' }}"
           echo "POSTGRES_HOST=$POSTGRES_HOST"
@@ -65,19 +63,16 @@ jobs:
       - name: Run Alembic migrations
         run: alembic -c alembic.ini upgrade head
         env:
-          # URL complète = zéro surprise
           DATABASE_URL: postgresql+psycopg2://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
           PYTHONPATH: ${{ github.workspace }}
 
       - name: Run tests
         run: pytest tests
 
-      # Secrets uniquement pour Docker Hub (liés à l'environnement sélectionné)
       - name: Log in to Docker Hub
         if: success()
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-      # Build/push staging pour tout sauf main
       - name: Build & Push Docker Staging image
         if: success() && github.ref != 'refs/heads/main' && !(github.event_name == 'pull_request' && github.base_ref == 'main')
         run: |
@@ -88,7 +83,6 @@ jobs:
           docker push $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG
           docker push $DOCKER_USERNAME/$IMAGE_NAME:latest
 
-      # Build/push prod seulement pour main
       - name: Build & Push Docker Production image
         if: success() && (github.ref == 'refs/heads/main' || (github.event_name == 'pull_request' && github.base_ref == 'main'))
         run: |
