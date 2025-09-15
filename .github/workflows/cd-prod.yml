@@ -1,13 +1,13 @@
-name: CD Staging (build & push)
+name: CD Production (build & push)
 
 on:
   push:
-    branches: [ develop ]
+    branches: [ main ]
 
 jobs:
-  publish-staging:
+  publish-prod:
     runs-on: ubuntu-latest
-    environment: staging
+    environment: production
 
     steps:
       - uses: actions/checkout@v4
@@ -19,12 +19,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build & Push Docker Staging image
+      - name: Build & Push Docker Production image
         run: |
           DATE_TAG=$(date +'%Y%m%d-%H%M')
-          IMAGE_NAME="pa-2025-2026-test"
+          IMAGE_NAME="pa-2025-2026"
           docker build -t ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:$DATE_TAG \
                        -t ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest \
-                       -f Dockerfile .
+                       -f Dockerfile.prod .
           docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:$DATE_TAG
           docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest
