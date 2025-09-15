@@ -11,7 +11,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    environment: ${{ (
+      (github.event_name == 'pull_request' && github.base_ref == 'main')    || github.ref == 'refs/heads/main'
+      ) && 'production' || (
+      (github.event_name == 'pull_request' && github.base_ref == 'develop') || github.ref == 'refs/heads/develop'
+      ) && 'staging' || '' }}
+
 
     services:
       postgres:
