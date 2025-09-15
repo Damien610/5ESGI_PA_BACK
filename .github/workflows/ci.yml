@@ -17,36 +17,45 @@ jobs:
       (github.event_name == 'pull_request' && github.base_ref == 'develop') || github.ref == 'refs/heads/develop'
       ) && 'staging' || '' }}
 
-
     services:
       postgres:
         image: postgres:15
-        ports: ['5432:5432']
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test_db
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER     || vars.POSTGRES_USER     || 'postgres' }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || vars.POSTGRES_PASSWORD || 'postgres' }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB       || vars.POSTGRES_DB       || 'test_db' }}
         options: >-
-          --health-cmd="pg_isready -U postgres"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+          --health-cmd="pg_isready -U ${{ secrets.POSTGRES_USER || vars.POSTGRES_USER || 'postgres' }}"
+          --health-interval=10s --health-timeout=5s --health-retries=5
 
     env:
-      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-      POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
-      POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER     || vars.POSTGRES_USER     || 'postgres' }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || vars.POSTGRES_PASSWORD || 'postgres' }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB       || vars.POSTGRES_DB       || 'test_db' }}
+      POSTGRES_HOST: 'postgres'   # reste 'postgres' car on parle au service
+      POSTGRES_PORT: '5432'
+
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+
+      - name: Debug env (temporaire)
+        run: |
+          echo "event=${{ github.event_name }}"
+          echo "ref=${{ github.ref }}"
+          echo "base_ref=${{ github.base_ref }}"
+          echo "ENV RESOLVED -> ${{ (
+            (github.event_name == 'pull_request' && github.base_ref == 'main')    || github.ref == 'refs/heads/main'
+          ) && 'production' || (
+            (github.event_name == 'pull_request' && github.base_ref == 'develop') || github.ref == 'refs/heads/develop'
+          ) && 'staging' || 'none' }}"
+          echo "POSTGRES_HOST=${POSTGRES_HOST}"
+          echo "POSTGRES_PORT=${POSTGRES_PORT}"
 
       - name: Install dependencies
         run: |
@@ -54,20 +63,13 @@ jobs:
           pip install -r requirements.txt
           pip install alembic
 
-      - name: Debug environnement
-        run: |
-          if [[ "${{ github.ref }}" == 'refs/heads/main' ]]; then
-            echo "production"
-          elif [[ "${{ github.ref }}" == 'refs/heads/develop' ]]; then
-            echo "staging"
-          else
-            echo "aucun environnement spécifique"
-          fi
-
       - name: Run Alembic migrations
-        run: alembic upgrade head
+        run: alembic -c alembic.ini upgrade head
+        env:
+          DATABASE_URL: postgresql+psycopg2://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
+          PYTHONPATH: ${{ github.workspace }}
 
-      - name: Run tests with pytest
+      - name: Run tests
         run: pytest tests
 
       - name: Log in to Docker Hub
@@ -75,9 +77,9 @@ jobs:
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
       - name: Build & Push Docker Test image
-        if: success() && github.base_ref == 'develop' && github.ref != 'refs/heads/main'
+        if: success() && github.event_name == 'pull_request' && github.base_ref == 'develop'
         run: |
-          DOCKER_USERNAME=damiennerri
+          DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
           DATE_TAG=$(date +'%Y%m%d-%H%M')
           IMAGE_NAME="pa-2025-2026-test"
           docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG -t $DOCKER_USERNAME/$IMAGE_NAME:latest -f Dockerfile .
@@ -87,7 +89,7 @@ jobs:
       - name: Build & Push Docker Production image
         if: success() && github.ref == 'refs/heads/main'
         run: |
-          DOCKER_USERNAME=damiennerri
+          DOCKER_USERNAME=${{ secrets.DOCKER_USERNAME }}
           DATE_TAG=$(date +'%Y%m%d-%H%M')
           IMAGE_NAME="pa-2025-2026"
           docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG -t $DOCKER_USERNAME/$IMAGE_NAME:latest -f Dockerfile.prod .
