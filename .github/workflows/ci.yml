@@ -1,11 +1,8 @@
-name: Python CI
+name: CI (tests)
 
 on:
   push:
-    branches:
-      - '**'
-  pull_request:
-    branches: [ main, develop ]
+    branches: ['**']
 
 jobs:
   test:
@@ -26,20 +23,18 @@ jobs:
           --health-retries=5
 
     env:
-      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-      POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-      POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
-      POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_db
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
 
       - name: Install dependencies
         run: |
@@ -48,31 +43,10 @@ jobs:
           pip install alembic
 
       - name: Run Alembic migrations
-        run: alembic upgrade head
+        run: alembic -c alembic.ini upgrade head
+        env:
+          DATABASE_URL: postgresql+psycopg2://${{ env.POSTGRES_USER }}:${{ env.POSTGRES_PASSWORD }}@${{ env.POSTGRES_HOST }}:${{ env.POSTGRES_PORT }}/${{ env.POSTGRES_DB }}
+          PYTHONPATH: ${{ github.workspace }}
 
-      - name: Run tests with pytest
+      - name: Run tests
         run: pytest tests
-
-      - name: Log in to Docker Hub
-        if: success()
-        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-
-      - name: Build & Push Docker Test image
-        if: success() && github.base_ref == 'develop' && github.ref != 'refs/heads/main'
-        run: |
-          DOCKER_USERNAME=damiennerri
-          DATE_TAG=$(date +'%Y%m%d-%H%M')
-          IMAGE_NAME="pa-2025-2026-test"
-          docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG -t $DOCKER_USERNAME/$IMAGE_NAME:latest -f Dockerfile .
-          docker push $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG
-          docker push $DOCKER_USERNAME/$IMAGE_NAME:latest
-
-      - name: Build & Push Docker Production image
-        if: success() && github.ref == 'refs/heads/main'
-        run: |
-          DOCKER_USERNAME=damiennerri
-          DATE_TAG=$(date +'%Y%m%d-%H%M')
-          IMAGE_NAME="pa-2025-2026"
-          docker build -t $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG -t $DOCKER_USERNAME/$IMAGE_NAME:latest -f Dockerfile.prod .
-          docker push $DOCKER_USERNAME/$IMAGE_NAME:$DATE_TAG
-          docker push $DOCKER_USERNAME/$IMAGE_NAME:latest
