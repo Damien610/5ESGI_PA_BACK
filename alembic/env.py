@@ -35,6 +35,7 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 from app.db import Base
 from app.models.calcul import Calcul
+from app.models.client import Client
 
 target_metadata = Base.metadata
 

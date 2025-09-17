@@ -4,7 +4,9 @@ sqlalchemy
 psycopg2-binary
 python-dotenv
 alembic
-sqlalchemy
 pytest
 httpx
 pytest-asyncio
+pydantic
+sqlmodel
+requests
