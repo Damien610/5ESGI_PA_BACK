@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
+
 from app.db import Base
 from datetime import datetime
 
@@ -14,3 +16,6 @@ class Client(Base):
     otp_hash = Column(String(64), nullable=True)
     otp_hash_expiration = Column(DateTime, nullable=True)
     active = Column(Boolean, default=False)
+
+    id_restaurant = Column(Integer, ForeignKey('restaurant.id_restaurant'), nullable=False)
+    restaurant = relationship("Restaurant", back_populates="clients")

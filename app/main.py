@@ -10,7 +10,8 @@ from .error_handler import (
     general_exception_handler
 )
 
-from app.api.routers import client_router
+from app.api.routers import client_router, terminal_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -27,6 +28,7 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
 app.include_router(client_router.router)
+app.include_router(terminal_router.router)
 
 async def startup():
     init_db()

@@ -34,7 +34,10 @@ if config.config_file_name is not None:
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
 from app.db import Base
+from app.models.restaurant import Restaurant
 from app.models.client import Client
+from app.models.terminal import Terminal
+from app.models.style import Style
 
 target_metadata = Base.metadata
 
