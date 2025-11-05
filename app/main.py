@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.middleware.cors import CORSMiddleware
+
 from .db import init_db
 from .exceptions import BaseAPIException
 from .error_handler import (
@@ -20,6 +22,18 @@ async def lifespan(app: FastAPI):
     print("👋 Shutdown complete")
 
 app = FastAPI(lifespan=lifespan)
+
+origins = [
+    "http://localhost:4200",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Enregistrement des gestionnaires d'erreurs
 app.add_exception_handler(BaseAPIException, api_exception_handler)

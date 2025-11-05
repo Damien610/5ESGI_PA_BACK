@@ -1,7 +1,6 @@
 from sqlalchemy.orm import Session
 from app.exceptions import NotFoundError
 from app.models import Style
-from app.models.terminal import Terminal
 
 class StyleRepository:
     def __init__(self, db: Session):
