@@ -11,3 +11,9 @@ class RestaurantRepository:
         if not restaurant:
             raise NotFoundError("Restaurant found")
         return restaurant
+
+    def get_by_uuid(self, uuid: str) -> Restaurant:
+        restaurant = self.db.query(Restaurant).filter(Restaurant.uuid == uuid).first()
+        if not restaurant:
+            raise NotFoundError("Restaurant not found")
+        return restaurant
