@@ -25,6 +25,38 @@ services:
     networks:
       - appnet_dev
 
+  minio-dev:
+    image: minio/minio:latest
+    container_name: minio-dev
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data_dev:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - appnet_dev
+
+  createbucket-dev:
+    image: minio/mc
+    container_name: minio-createbucket-dev
+    depends_on:
+      - minio-dev
+    entrypoint: |
+      /bin/sh -c "
+      sleep 5
+      mc alias set local http://minio-dev:9000 minioadmin minioadmin
+      mc mb --ignore-existing local/uploads
+      mc anonymous set download local/uploads
+      mc ls local/uploads
+      exit 0
+      "
+    networks:
+      - appnet_dev
+
   api_dev:
     build:
       context: .
@@ -32,6 +64,7 @@ services:
     container_name: fastapi_projet_dev
     depends_on:
       - db_dev
+      - minio-dev
     ports:
       - "8000:8000"
     env_file:
@@ -45,6 +78,7 @@ services:
 
 volumes:
   postgres_data_dev:
+  minio_data_dev:
 
 networks:
   appnet_dev:

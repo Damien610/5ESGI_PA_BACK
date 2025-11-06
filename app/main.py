@@ -12,12 +12,14 @@ from .error_handler import (
     general_exception_handler
 )
 
-from app.api.routers import client_router, terminal_router
+from app.api.routers import client_router, terminal_router, storage_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("✅ Database connection successful")
+    from app.services.storage_service import storage_service
+    storage_service.ensure_bucket_exists()
     yield
     print("👋 Shutdown complete")
 
@@ -43,6 +45,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 app.include_router(client_router.router)
 app.include_router(terminal_router.router)
+app.include_router(storage_router.router)
 
 async def startup():
     init_db()
