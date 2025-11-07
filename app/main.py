@@ -12,7 +12,7 @@ from .error_handler import (
     general_exception_handler
 )
 
-from app.api.routers import client_router, terminal_router
+from app.api.routers import client_router, terminal_router, restaurant_router
 
 
 @asynccontextmanager
@@ -43,6 +43,7 @@ app.add_exception_handler(Exception, general_exception_handler)
 
 app.include_router(client_router.router)
 app.include_router(terminal_router.router)
+app.include_router(restaurant_router.router)
 
 async def startup():
     init_db()
