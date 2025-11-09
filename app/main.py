@@ -1,6 +1,8 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.middleware.cors import CORSMiddleware
+
 from .db import init_db
 from .exceptions import BaseAPIException
 from .error_handler import (
@@ -10,7 +12,8 @@ from .error_handler import (
     general_exception_handler
 )
 
-from app.api.routers import client_router
+from app.api.routers import client_router, terminal_router, restaurant_router
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,6 +23,18 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+origins = [
+    "http://localhost:4200",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Enregistrement des gestionnaires d'erreurs
 app.add_exception_handler(BaseAPIException, api_exception_handler)
 app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
@@ -27,6 +42,8 @@ app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
 app.include_router(client_router.router)
+app.include_router(terminal_router.router)
+app.include_router(restaurant_router.router)
 
 async def startup():
     init_db()

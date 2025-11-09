@@ -35,5 +35,6 @@ async def general_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unexpected error: {str(exc)}")
     return JSONResponse(
         status_code=500,
-        content={"error": f"Erreur interne du serveur {str(exc)}", "type": "InternalServerError"}
+        content={"error": "Erreur interne du serveur", "type": "InternalServerError"}
     )
+

@@ -14,7 +14,6 @@ dev-bash-api:
 
 dev-bash-db:
 	docker exec -it postgres_dev bash
-
 # 🚀 Prod
 prod-up:
 	docker compose -p app_prod -f docker-compose.prod.yml --env-file .env.prod up --build -d
@@ -34,13 +33,16 @@ prod-bash-db:
 
 # ⚙️ Alembic
 migrate:
-	alembic revision --autogenerate -m "$(msg)"
+	docker exec -it fastapi_projet_dev alembic revision --autogenerate -m "$(msg)"
 
 upgrade:
-	alembic upgrade head
+	docker exec -it fastapi_projet_dev alembic upgrade head
 
 downgrade:
-	alembic downgrade -1
+	docker exec -it fastapi_projet_dev alembic downgrade -1
+
+seed:
+	docker exec -it fastapi_projet_dev psql -h db_dev -U dev -d app_db_dev -f /app/scripts/seed_data.sql
 
 # 🧪 Tests et qualité du code
 lint:
