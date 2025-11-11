@@ -12,12 +12,14 @@ from .error_handler import (
     general_exception_handler
 )
 
-from app.api.routers import client_router, terminal_router, restaurant_router
+from app.api.routers import storage_router, client_router, terminal_router, restaurant_router, 
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("✅ Database connection successful")
+    from app.services.storage_service import storage_service
+    storage_service.ensure_bucket_exists()
     yield
     print("👋 Shutdown complete")
 
@@ -41,6 +43,7 @@ app.add_exception_handler(SQLAlchemyError, sqlalchemy_exception_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
 
+app.include_router(storage_router.router)
 app.include_router(client_router.router)
 app.include_router(terminal_router.router)
 app.include_router(restaurant_router.router)

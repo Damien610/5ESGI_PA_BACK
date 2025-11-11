@@ -13,6 +13,18 @@ def client_service():
 @patch('app.services.client_service.OTPService')
 def test_create_client_success(mock_otp_service, client_service):
     """Test de création de client réussie"""
+    from app.models.restaurant import Restaurant
+    
+    # Mock du restaurant
+    mock_restaurant = Restaurant(
+        id_restaurant=1,
+        uri_name="test",
+        name="Test",
+        logo="logo.png",
+        uuid="restaurant-uuid"
+    )
+    client_service.restaurant_repo.get_by_uuid = MagicMock(return_value=mock_restaurant)
+    
     # Mock du repository
     client_service.client_repo.create = MagicMock()
     mock_client = Client(
@@ -20,7 +32,8 @@ def test_create_client_success(mock_otp_service, client_service):
         last_name="User", 
         email="test@example.com",
         uuid="test-uuid",
-        loyalty_code="TEST123"
+        loyalty_code="TEST123",
+        id_restaurant=1
     )
     client_service.client_repo.create.return_value = mock_client
     
@@ -30,7 +43,7 @@ def test_create_client_success(mock_otp_service, client_service):
     mock_otp_instance.send_otp.return_value = True
     client_service.otp_service = mock_otp_instance
     
-    result = client_service.create_client("Test", "User", "test@example.com", "test-uuid", "TEST123")
+    result = client_service.create_client("Test", "User", "test@example.com", "restaurant-uuid", "test-uuid", "TEST123")
     
     assert result == mock_client
     client_service.client_repo.create.assert_called_once()
@@ -39,6 +52,19 @@ def test_create_client_success(mock_otp_service, client_service):
 @patch('app.services.client_service.OTPService')
 def test_create_client_otp_failure(mock_otp_service, client_service):
     """Test de création de client avec échec d'envoi OTP"""
+    from app.models.restaurant import Restaurant
+    
+    # Mock du restaurant
+    mock_restaurant = Restaurant(
+        id_restaurant=1,
+        uri_name="test",
+        name="Test",
+        logo="logo.png",
+        uuid="restaurant-uuid"
+    )
+    client_service.restaurant_repo.get_by_uuid = MagicMock(return_value=mock_restaurant)
+    client_service.client_repo.create = MagicMock()
+    
     # Mock du service OTP qui échoue
     mock_otp_instance = MagicMock()
     mock_otp_service.return_value = mock_otp_instance
@@ -46,7 +72,7 @@ def test_create_client_otp_failure(mock_otp_service, client_service):
     client_service.otp_service = mock_otp_instance
     
     with pytest.raises(ValidationError, match="Erreur lors de l'envoi de l'email de vérification"):
-        client_service.create_client("Test", "User", "test@example.com", "test-uuid", "TEST123")
+        client_service.create_client("Test", "User", "test@example.com", "restaurant-uuid", "test-uuid", "TEST123")
 
 def test_get_client_by_email(client_service):
     """Test de récupération de client par email"""

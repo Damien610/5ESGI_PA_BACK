@@ -10,3 +10,6 @@ pytest-asyncio
 pydantic
 sqlmodel
 requests
+minio
+python-multipart
+pydantic-settings

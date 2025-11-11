@@ -8,6 +8,7 @@ class ClientCreate(BaseModel):
     first_name: str
     last_name: str
     email: str
+    restaurant_uuid: str
     uuid: str = Field(default_factory=lambda: str(uuid4()))
     loyalty_code: str | None = None
 

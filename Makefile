@@ -4,7 +4,7 @@ dev-up:
 	docker compose -p app_dev -f docker-compose.yml --env-file .env.dev up --build -d
 
 dev-down:
-	docker compose -p app_dev -f docker-compose.yml --env-file .env.dev down --volumes --remove-orphans
+	docker compose -p app_dev -f docker-compose.yml --env-file .env.dev down --remove-orphans
 
 dev-logs:
 	docker compose -p app_dev -f docker-compose.yml --env-file .env.dev logs -f
@@ -19,7 +19,7 @@ prod-up:
 	docker compose -p app_prod -f docker-compose.prod.yml --env-file .env.prod up --build -d
 
 prod-down:
-	docker compose -p app_prod -f docker-compose.prod.yml --env-file .env.prod down --volumes --remove-orphans
+	docker compose -p app_prod -f docker-compose.prod.yml --env-file .env.prod down --remove-orphans
 
 prod-logs:
 	docker compose -p app_prod -f docker-compose.prod.yml --env-file .env.prod logs -f

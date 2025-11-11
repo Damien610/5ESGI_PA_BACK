@@ -17,6 +17,7 @@ def create_client(client: ClientCreate, db: Session = Depends(get_db)):
         first_name=client.first_name,
         last_name=client.last_name,
         email=client.email,
+        restaurant_uuid=client.restaurant_uuid,
         uuid=client.uuid,
         loyalty_code=client.loyalty_code
     )
