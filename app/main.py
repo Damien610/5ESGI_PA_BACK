@@ -12,7 +12,7 @@ from .error_handler import (
     general_exception_handler
 )
 
-from app.api.routers import storage_router, client_router, terminal_router, restaurant_router, 
+from app.api.routers import storage_router, client_router, terminal_router, restaurant_router
 
 
 @asynccontextmanager
