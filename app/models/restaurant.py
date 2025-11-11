@@ -10,6 +10,7 @@ class Restaurant(Base):
     uri_name = Column(String(100), nullable=False, unique=True)
     name = Column(String(100), nullable=False)
     logo = Column(String(200), nullable=False)
+    favicon = Column(String(200), nullable=False)
     uuid = Column(String(100), nullable=False)
 
     styles = relationship("Style", back_populates="restaurant", cascade="all, delete-orphan")
