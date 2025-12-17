@@ -15,11 +15,50 @@ API d'authentification OTP pour système de fidélité client.
 git clone <repo-url>
 cd 5ESGI_PA_BACK
 
+# Configurer l'environnement de développement
+# Windows:
+scripts\setup-dev.bat
+# Linux/Mac:
+./scripts/setup-dev.sh
+
+# OU manuellement:
+cp .env.example .env.local
+# Éditer .env.local avec vos vraies valeurs
+
 # Démarrer l'environnement
 make dev-up
 
 # Appliquer les migrations
 make upgrade
+```
+
+## ⚠️ Configuration Sécurisée
+
+### Développement Local
+**IMPORTANT**: Les fichiers `.env` ne sont JAMAIS commités dans Git !
+
+1. Utilisez `.env.local` pour le développement
+2. Configurez vos vraies valeurs :
+   - `SECRET_KEY`: Générée automatiquement par le script
+   - `SMTP_USER` et `SMTP_PASSWORD`: Vos vraies credentials SMTP
+   - `MINIO_ACCESS_KEY` et `MINIO_SECRET_KEY`: Clés MinIO sécurisées
+
+### Production
+Les secrets sont gérés via :
+- **GitHub Secrets** pour les pipelines CI/CD
+- **Variables d'environnement système** pour les serveurs
+- **Docker Secrets** pour les déploiements Docker Swarm
+
+### Secrets GitHub à configurer :
+```
+SECRET_KEY_PROD=<clé-secrète-production>
+SECRET_KEY_TEST=<clé-secrète-test>
+POSTGRES_PASSWORD_PROD=<mot-de-passe-db-prod>
+SMTP_PASSWORD_PROD=<mot-de-passe-smtp-prod>
+MINIO_ACCESS_KEY_PROD=<clé-minio-prod>
+MINIO_SECRET_KEY_PROD=<clé-secrète-minio-prod>
+DOCKER_USERNAME=<nom-utilisateur-docker>
+DOCKER_PASSWORD=<mot-de-passe-docker>
 ```
 
 ## Développement
@@ -78,10 +117,22 @@ app/
 ├── repositories/    # Accès base de données
 ├── services/        # Logique métier
 ├── api/routers/     # Endpoints FastAPI
+├── middleware/      # Middleware de sécurité
 ├── core/           # Configuration
 ├── utils/          # Utilitaires
 └── exceptions/     # Gestion erreurs
 ```
+
+## Sécurité
+
+### Fonctionnalités de sécurité implémentées :
+- ✅ Headers de sécurité automatiques
+- ✅ Rate limiting par IP
+- ✅ CORS configuré de manière restrictive
+- ✅ Validation des données avec Pydantic
+- ✅ Gestion centralisée des erreurs
+- ✅ Logging structuré des requêtes
+- ✅ Health checks pour monitoring
 
 ## Configuration
 
@@ -127,21 +178,30 @@ app/
 
 ## Endpoints disponibles
 
-- `POST /clients/create` - Créer un client
-- `POST /clients/send-otp` - Envoyer un OTP
-- `POST /clients/verify-otp` - Vérifier un OTP
-- `GET /clients/{email}` - Récupérer un client
+### API v1 (préfixe `/api/v1`)
+- `POST /api/v1/clients/create` - Créer un client
+- `POST /api/v1/clients/send-otp` - Envoyer un OTP
+- `POST /api/v1/clients/verify-otp` - Vérifier un OTP
+- `GET /api/v1/clients/{email}` - Récupérer un client
+
+### Monitoring
+- `GET /` - Status de l'API
+- `GET /health` - Health check
+- `GET /docs` - Documentation Swagger
 
 ## Test rapide
 
 ```bash
+# Health check
+curl http://localhost:8000/health
+
 # Créer un client
-curl -X POST "http://localhost:8000/clients/create" \
+curl -X POST "http://localhost:8000/api/v1/clients/create" \
      -H "Content-Type: application/json" \
      -d '{"first_name": "Test", "last_name": "User", "email": "test@example.com"}'
 
 # Vérifier l'OTP
-curl -X POST "http://localhost:8000/clients/verify-otp" \
+curl -X POST "http://localhost:8000/api/v1/clients/verify-otp" \
      -H "Content-Type: application/json" \
      -d '{"email": "test@example.com", "otp_code": "123456"}'
 ```

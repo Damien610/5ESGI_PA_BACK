@@ -20,11 +20,24 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build & Push Docker Staging image
+        env:
+          # Staging secrets from GitHub Secrets
+          SECRET_KEY: ${{ secrets.SECRET_KEY_STAGING }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD_STAGING }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD_STAGING }}
+          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY_STAGING }}
+          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY_STAGING }}
         run: |
           DATE_TAG=$(date +'%Y%m%d-%H%M')
           IMAGE_NAME="pa-2025-2026-test"
           docker build -t ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:$DATE_TAG \
                        -t ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest \
-                       -f Dockerfile .
+                       -f Dockerfile \
+                       --build-arg SECRET_KEY="$SECRET_KEY" \
+                       --build-arg POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+                       --build-arg SMTP_PASSWORD="$SMTP_PASSWORD" \
+                       --build-arg MINIO_ACCESS_KEY="$MINIO_ACCESS_KEY" \
+                       --build-arg MINIO_SECRET_KEY="$MINIO_SECRET_KEY" \
+                       .
           docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:$DATE_TAG
           docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest

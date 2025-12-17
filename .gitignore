@@ -120,14 +120,50 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-# Environments
-.env
+# Environments & Secrets - NEVER COMMIT THESE
+.env*
+!.env.example
+.env.local
+.env.dev
+.env.prod
+.env.staging
+.env.test
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
+
+# Security & Secrets
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+keys/
+certs/
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
 # Spyder project settings
 .spyderproject

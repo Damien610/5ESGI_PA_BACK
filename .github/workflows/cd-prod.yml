@@ -20,11 +20,24 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build & Push Docker Production image
+        env:
+          # Production secrets from GitHub Secrets
+          SECRET_KEY: ${{ secrets.SECRET_KEY_PROD }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD_PROD }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD_PROD }}
+          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY_PROD }}
+          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY_PROD }}
         run: |
           DATE_TAG=$(date +'%Y%m%d-%H%M')
           IMAGE_NAME="pa-2025-2026"
           docker build -t ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:$DATE_TAG \
                        -t ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest \
-                       -f Dockerfile.prod .
+                       -f Dockerfile.prod \
+                       --build-arg SECRET_KEY="$SECRET_KEY" \
+                       --build-arg POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+                       --build-arg SMTP_PASSWORD="$SMTP_PASSWORD" \
+                       --build-arg MINIO_ACCESS_KEY="$MINIO_ACCESS_KEY" \
+                       --build-arg MINIO_SECRET_KEY="$MINIO_SECRET_KEY" \
+                       .
           docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:$DATE_TAG
           docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest
