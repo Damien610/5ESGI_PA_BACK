@@ -21,9 +21,12 @@ if [ ! -f ".env.local" ]; then
     
     # Remplacer les valeurs par défaut
     sed -i "s/your-very-secure-secret-key-here/$SECRET_KEY/" .env.local
+    sed -i "s/your-email@gmail.com/borne.appetit.projet@gmail.com/" .env.local
+    sed -i "s/your-app-password/abcd efgh ijkl mnop/" .env.local
     
-    echo "✅ Fichier .env.local créé avec une clé secrète générée"
-    echo "⚠️  IMPORTANT: Configurez vos vraies valeurs SMTP dans .env.local"
+    echo "✅ Fichier .env.local créé avec:"
+    echo "  - Clé secrète générée automatiquement"
+    echo "  - Credentials SMTP partagés configurés"
 else
     echo "ℹ️  Le fichier .env.local existe déjà"
 fi

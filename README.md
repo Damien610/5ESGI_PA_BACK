@@ -15,7 +15,7 @@ API d'authentification OTP pour système de fidélité client.
 git clone <repo-url>
 cd 5ESGI_PA_BACK
 
-# Configurer l'environnement de développement
+# Configurer l'environnement de développement (génère automatiquement SECRET_KEY + SMTP)
 # Windows:
 scripts\setup-dev.bat
 # Linux/Mac:
@@ -23,7 +23,7 @@ scripts\setup-dev.bat
 
 # OU manuellement:
 cp .env.example .env.local
-# Éditer .env.local avec vos vraies valeurs
+# Éditer .env.local avec vos valeurs
 
 # Démarrer l'environnement
 make dev-up

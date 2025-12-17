@@ -18,11 +18,14 @@ if not exist ".env.local" (
     REM Générer une clé secrète sécurisée
     for /f %%i in ('python -c "import secrets; print(secrets.token_urlsafe(32))"') do set SECRET_KEY=%%i
     
-    REM Remplacer la clé secrète dans le fichier
+    REM Remplacer la clé secrète et les credentials SMTP dans le fichier
     powershell -Command "(gc .env.local) -replace 'your-very-secure-secret-key-here', '%SECRET_KEY%' | Out-File -encoding ASCII .env.local"
+    powershell -Command "(gc .env.local) -replace 'your-email@gmail.com', 'borneappetit0@gmail.com' | Out-File -encoding ASCII .env.local"
+    powershell -Command "(gc .env.local) -replace 'your-app-password', 'garr egub sndo qpxl' | Out-File -encoding ASCII .env.local"
     
-    echo ✅ Fichier .env.local créé avec une clé secrète générée
-    echo ⚠️  IMPORTANT: Configurez vos vraies valeurs SMTP dans .env.local
+    echo ✅ Fichier .env.local créé avec:
+    echo   - Clé secrète générée automatiquement
+    echo   - Credentials SMTP partagés configurés
 ) else (
     echo ℹ️  Le fichier .env.local existe déjà
 )
