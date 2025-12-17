@@ -1,28 +1,38 @@
 # 🔧 Environnement de développement
 # 🛠 Dev
-dev-up:
-	docker compose -p app_dev -f docker-compose.yml --env-file .env.dev up --build -d
+setup-dev:
+	@if [ ! -f .env.local ]; then \
+		echo "Création de .env.local..."; \
+		cp .env.example .env.local; \
+		echo "⚠️  Configurez vos variables dans .env.local avant de continuer"; \
+	else \
+		echo "✅ .env.local existe déjà"; \
+	fi
+
+dev-up: setup-dev
+	docker compose -p app_dev -f docker-compose.yml --env-file .env.local up --build -d
 
 dev-down:
-	docker compose -p app_dev -f docker-compose.yml --env-file .env.dev down --remove-orphans
+	docker compose -p app_dev -f docker-compose.yml --env-file .env.local down --remove-orphans
 
 dev-logs:
-	docker compose -p app_dev -f docker-compose.yml --env-file .env.dev logs -f
+	docker compose -p app_dev -f docker-compose.yml --env-file .env.local logs -f
 
 dev-bash-api:
 	docker exec -it fastapi_projet_dev bash
 
 dev-bash-db:
 	docker exec -it postgres_dev bash
-# 🚀 Prod
+# 🚀 Prod (utilise les variables d'environnement système)
 prod-up:
-	docker compose -p app_prod -f docker-compose.prod.yml --env-file .env.prod up --build -d
+	@echo "⚠️  Assurez-vous que toutes les variables d'environnement sont définies"
+	docker compose -p app_prod -f docker-compose.prod.yml up --build -d
 
 prod-down:
-	docker compose -p app_prod -f docker-compose.prod.yml --env-file .env.prod down --remove-orphans
+	docker compose -p app_prod -f docker-compose.prod.yml down --remove-orphans
 
 prod-logs:
-	docker compose -p app_prod -f docker-compose.prod.yml --env-file .env.prod logs -f
+	docker compose -p app_prod -f docker-compose.prod.yml logs -f
 
 prod-bash-api:
 	docker exec -it fastapi_projet_prod bash

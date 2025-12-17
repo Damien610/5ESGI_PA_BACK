@@ -14,7 +14,7 @@ jobs:
         ports: ['5432:5432']
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD_TEST || 'postgres' }}
           POSTGRES_DB: test_db
         options: >-
           --health-cmd="pg_isready -U postgres"
@@ -23,11 +23,26 @@ jobs:
           --health-retries=5
 
     env:
+      # Database (test environment)
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD_TEST || 'postgres' }}
       POSTGRES_DB: test_db
       POSTGRES_HOST: 127.0.0.1
       POSTGRES_PORT: '5432'
+      # Security
+      SECRET_KEY: ${{ secrets.SECRET_KEY_TEST }}
+      ENVIRONMENT: test
+      DEBUG: false
+      # SMTP (mock for tests)
+      SMTP_SERVER: localhost
+      SMTP_PORT: 587
+      SMTP_USER: test@example.com
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD_TEST || 'test' }}
+      # MinIO (mock for tests)
+      MINIO_ENDPOINT: localhost:9000
+      MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY_TEST || 'test' }}
+      MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY_TEST || 'test' }}
+      MINIO_BUCKET: test
 
     steps:
       - uses: actions/checkout@v4

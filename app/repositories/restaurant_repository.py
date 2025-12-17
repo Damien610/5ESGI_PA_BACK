@@ -16,6 +16,7 @@ class RestaurantRepository:
         restaurant = self.db.query(Restaurant).filter(Restaurant.uuid == uuid).first()
         if not restaurant:
             raise NotFoundError("Restaurant not found")
+        return restaurant
     def get_by_uri(self, uri_name: str) -> Restaurant:
         restaurant = self.db.query(Restaurant).filter(Restaurant.uri_name == uri_name).first()
         if not restaurant:
